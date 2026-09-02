@@ -1,0 +1,7 @@
+services:
+  automl:
+    # 本地/測試機用：直接把這個 repo 掛進 container 對應 /share/automl 的位置，
+    # 蓋掉正式環境 docker-compose.yml 裡對 /share 的掛載，不用真的有 /share 這個資料夾。
+    # working_dir 沿用 Dockerfile 的 WORKDIR /share/automl，不用重複寫。
+    volumes:
+      - .:/share/automl

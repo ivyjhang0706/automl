@@ -1,0 +1,18 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+.vscode/
+.idea/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# 病患 ECG/血糖資料，不能烤進 image（尤其這個 image 會 push 到公開 DockerHub repo）。
+# 實際跑訓練時是靠 docker-compose.yml 的 /share bind mount 即時提供，image 裡不需要。
+data/
+output/

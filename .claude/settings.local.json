@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(powershell.exe -NoProfile -Command \"Get-Item 'C:\\\\Users\\\\ivy_j\\\\projects\\\\autoML\\\\data' -ErrorAction SilentlyContinue | Select-Object FullName, LinkType, Target\")",
+      "Bash(powershell.exe -NoProfile -Command '$env:OneDrive')",
+      "Bash(python -m py_compile automl.py dl_ml.py main.py data.py load.py)",
+      "Read(//c/Users/ivy_j/.ssh/**)",
+      "Bash(ssh -vvv -o ConnectTimeout=15 -o BatchMode=yes automl-container exit)"
+    ]
+  }
+}
