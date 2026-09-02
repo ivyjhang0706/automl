@@ -8,6 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Python 3.9 (matches Python 3.9.23) via deadsnakes, since Ubuntu 22.04 ships 3.10 by
 # default. 3.9 reached EOL in Oct 2025, so 3.9.23 is its final release and this stays pinned.
+# tini for ssh initial
 RUN apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common \
         curl \
@@ -22,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgomp1 \
         git \
         openssh-server \
+        tini \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.9 /usr/bin/python3 \
     && ln -sf /usr/bin/python3.9 /usr/bin/python \
@@ -46,7 +48,7 @@ RUN pip install --upgrade pip \
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "docker-entrypoint.sh"]
 
 # Pure compute/script environment: keep the container alive so you can
 # `docker compose exec automl python your_script.py` or open a shell into it.

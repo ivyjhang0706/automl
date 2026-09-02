@@ -1,11 +1,10 @@
 services:
   automl:
     build: .
-    image: automl:latest
+    image: automl:1.2
     container_name: automl
-    init: true                    # 用 Docker 內建 init 回收殭屍程序，避免 sshd daemon 化後掛在 tail 底下沒人 reap
     volumes:
-      - /share:/share            # 算力平台的持久化儲存固定掛在 /share，沒辦法只掛子資料夾
+      - /share:/share            
     ports:
       - "2222:22"                # 主機的 22 已被主機自己的 sshd 佔用，container 的 sshd 改對外開 2222
     tty: true
