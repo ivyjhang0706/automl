@@ -1,7 +1,7 @@
 services:
   automl:
     build: .
-    image: automl:1.2
+    image: automl:1.4
     container_name: automl
     volumes:
       - /share:/share            

@@ -29,8 +29,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -sf /usr/bin/python3.9 /usr/bin/python \
     && curl -sS https://bootstrap.pypa.io/pip/3.9/get-pip.py | python3.9 \
     && mkdir -p /var/run/sshd \
-    && sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
-    && sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    && sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config \
+    && sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && groupadd automl \
+    && for u in ivy stella jane aegon dennis belle; do \
+           useradd -m -s /bin/bash -G automl "$u"; \
+       done
+
+# 每人各自帳號、各自金鑰登入，不共用 root。公鑰本身不是機密，烤進公開 image 沒關係——
+# 只有對應私鑰的人才能登入。之後要加新人，往 pubkeys/ 加一個檔案、上面 for 迴圈加個名字就好。
+COPY pubkeys/ /tmp/pubkeys/
+RUN for u in ivy stella jane aegon dennis belle; do \
+        mkdir -p /home/$u/.ssh \
+        && cp /tmp/pubkeys/$u.pub /home/$u/.ssh/authorized_keys \
+        && chmod 700 /home/$u/.ssh \
+        && chmod 600 /home/$u/.ssh/authorized_keys \
+        && chown -R $u:$u /home/$u/.ssh; \
+    done \
+    && rm -rf /tmp/pubkeys
+
+# 每個人登入後自動跳到專案資料夾，不用自己 cd（/share 是 runtime 才掛進來的，容器裡沒有就算了）
+RUN echo 'cd /share/automl 2>/dev/null || true' > /etc/profile.d/automl-cd.sh \
+    && chmod +x /etc/profile.d/automl-cd.sh
 
 EXPOSE 22
 
