@@ -115,59 +115,61 @@ if __name__ == '__main__':
 
 
         used_feature_array = np.array([row[0] for row in used_feature_dic]) # Regression_ECGDataset 會使用 row[0]==1 當作特徵欄位
-        path_info = load.load_path_info(base_path, '70_30', uuid, 'Normal', 10)
-        if not path_info:
-            print(f'  uuid {uuid} 樣本數不足或缺資料，略過')
-            continue
-        current_path, current_test_path = path_info
-        model_type = 'Normal'
-        method = 'raw'
 
-        traindata = Regression_ECGDataset(current_path, used_feature_array, type=model_type, method=method)
-        testdata = Regression_ECGDataset(current_test_path, used_feature_array, type=model_type, method=method)
+        for model_type in ['Normal', 'High', 'Low']:
+            path_info = load.load_path_info(base_path, '70_30', uuid, model_type, 10)
+            if not path_info:
+                print(f'  uuid {uuid} ({model_type}) 樣本數不足或缺資料，略過')
+                continue
+            current_path, current_test_path = path_info
+            method = 'raw'
 
-        automl = SimpleAutoMLRegressor(n_trials=20, scoring='neg_mean_absolute_percentage_error')
-        # Regression_ECGDataset 在 raw method 下會多出一個 channel 維度 (n, 1, n_features)，
-        # 我們的模型都吃 2D (n_samples, n_features)，攤平掉多的那一維。
-        train_X = traindata.Signals.numpy().reshape(len(traindata), -1)
-        train_y = traindata.Labels.numpy()
-        study = automl.fit(train_X, train_y)
+            traindata = Regression_ECGDataset(current_path, used_feature_array, type=model_type, method=method)
+            testdata = Regression_ECGDataset(current_test_path, used_feature_array, type=model_type, method=method)
 
-        ##-------step 2. 用最佳模型在 held-out 的 testdata 上算最終績效--------
-        test_X = testdata.Signals.numpy().reshape(len(testdata), -1)
-        test_y = testdata.Labels.numpy()
-        test_pred = automl.best_model_.predict(test_X)
-        metrics = evaluate_regression(test_y, test_pred)
+            automl = SimpleAutoMLRegressor(n_trials=20, scoring='neg_mean_absolute_percentage_error')
+            # Regression_ECGDataset 在 raw method 下會多出一個 channel 維度 (n, 1, n_features)，
+            # 我們的模型都吃 2D (n_samples, n_features)，攤平掉多的那一維。
+            train_X = traindata.Signals.numpy().reshape(len(traindata), -1)
+            train_y = traindata.Labels.numpy()
+            study = automl.fit(train_X, train_y)
 
-        print(f"  test set 績效: MAE={metrics['MAE']:.2f} RMSE={metrics['RMSE']:.2f} "
-              f"MARD={metrics['MARD']:.1f}% Bias={metrics['Bias']:.2f}")
-        print(f"  {automl.ensemble_info_['gate_reason']}")
+            ##-------step 2. 用最佳模型在 held-out 的 testdata 上算最終績效--------
+            test_X = testdata.Signals.numpy().reshape(len(testdata), -1)
+            test_y = testdata.Labels.numpy()
+            test_pred = automl.best_model_.predict(test_X)
+            metrics = evaluate_regression(test_y, test_pred)
 
-        ensemble_info = automl.ensemble_info_
+            print(f"  [{model_type}] test set 績效: MAE={metrics['MAE']:.2f} RMSE={metrics['RMSE']:.2f} "
+                  f"MARD={metrics['MARD']:.1f}% Bias={metrics['Bias']:.2f}")
+            print(f"  {automl.ensemble_info_['gate_reason']}")
 
-        row = {
-            'uuid': uuid,
-            'start_time': start_time,
-            'end_time': end_time,
-            'best_regressor': study.best_params.get('regressor'),
-            'best_params': json.dumps(study.best_params, ensure_ascii=False),
-            'cv_best_score': study.best_value,
-            'n_train': len(traindata),
-            'n_test': len(testdata),
-            'used_stacking': ensemble_info['used_stacking'],
-            'single_best_cv_mean': ensemble_info['single_best_cv_mean'],
-            'single_best_cv_sem': ensemble_info['single_best_cv_sem'],
-            'stacking_cv_mean': ensemble_info['stacking_cv_mean'],
-            'stacking_cv_sem': ensemble_info['stacking_cv_sem'],
-            'ensemble_gate_reason': ensemble_info['gate_reason'],
-            **metrics,
-        }
+            ensemble_info = automl.ensemble_info_
 
-        ##-------step 3. 這個 uuid 一跑完就馬上寫入 csv，不用等全部 uuid 跑完--------
-        pd.DataFrame([row]).to_csv(
-            results_csv_path, mode='a', index=False,
-            header=not results_csv_path.exists(), encoding='utf-8-sig',
-        )
-        print(f'  已寫入 {uuid} 的結果到: {results_csv_path}')
+            row = {
+                'uuid': uuid,
+                'model_type': model_type,
+                'start_time': start_time,
+                'end_time': end_time,
+                'best_regressor': study.best_params.get('regressor'),
+                'best_params': json.dumps(study.best_params, ensure_ascii=False),
+                'cv_best_score': study.best_value,
+                'n_train': len(traindata),
+                'n_test': len(testdata),
+                'used_stacking': ensemble_info['used_stacking'],
+                'single_best_cv_mean': ensemble_info['single_best_cv_mean'],
+                'single_best_cv_sem': ensemble_info['single_best_cv_sem'],
+                'stacking_cv_mean': ensemble_info['stacking_cv_mean'],
+                'stacking_cv_sem': ensemble_info['stacking_cv_sem'],
+                'ensemble_gate_reason': ensemble_info['gate_reason'],
+                **metrics,
+            }
+
+            ##-------step 3. 這個 uuid 一跑完就馬上寫入 csv，不用等全部 uuid 跑完--------
+            pd.DataFrame([row]).to_csv(
+                results_csv_path, mode='a', index=False,
+                header=not results_csv_path.exists(), encoding='utf-8-sig',
+            )
+            print(f'  已寫入 {uuid} ({model_type}) 的結果到: {results_csv_path}')
 
     print(f'\n全部 uuid 執行完畢，結果已彙整到: {results_csv_path}')

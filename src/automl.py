@@ -12,7 +12,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from xgboost import XGBRegressor
 from sklearn.svm import SVR
-from dl_ml import TabNetRegressorWrapper, ResNetMLPRegressor
+from automl.src.dl_ml import TabNetRegressorWrapper, ResNetMLPRegressor
 
 
 class InfToNanImputer(TransformerMixin, BaseEstimator):

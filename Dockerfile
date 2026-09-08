@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         openssh-server \
         tini \
+        tmux \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.9 /usr/bin/python3 \
     && ln -sf /usr/bin/python3.9 /usr/bin/python \
@@ -48,13 +49,14 @@ RUN for u in ivy stella jane aegon dennis belle; do \
     done \
     && rm -rf /tmp/pubkeys
 
-# 每個人登入後自動跳到專案資料夾，不用自己 cd（/share 是 runtime 才掛進來的，容器裡沒有就算了）
-RUN echo 'cd /share/automl 2>/dev/null || true' > /etc/profile.d/automl-cd.sh \
+# 每個人登入後自動跳到自己在 /share 底下的資料夾，不用自己 cd
+# （/share 是 runtime 才掛進來的，容器裡沒有就算了）
+RUN echo 'cd "/share/$(whoami)" 2>/dev/null || true' > /etc/profile.d/automl-cd.sh \
     && chmod +x /etc/profile.d/automl-cd.sh
 
 EXPOSE 22
 
-WORKDIR /share/automl
+WORKDIR /share
 
 COPY requirements.txt .
 

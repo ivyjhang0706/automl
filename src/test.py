@@ -1,10 +1,10 @@
 import json
-import load
+import automl.src.load as load
 from data import Regression_ECGDataset
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from automl import SimpleAutoMLRegressor, evaluate_regression
+from automl.src.automl import SimpleAutoMLRegressor, evaluate_regression
 
 # 測試用例
 if __name__ == '__main__':
